@@ -13,8 +13,7 @@ public class Main {
 
         ClientThread clientThread = new ClientThread();
         clientThread.start();
-
-        return;
+        
     }
 }
 
