@@ -1,9 +1,16 @@
 const fs = require('fs');
 const accountPath = './database/accounts.json';
 
-function checkIfAccountExists(inputAccount) {
+function checkIfAccountExists(inputAccount, connection) {
 
     return new Promise((resolve, reject) => {
+
+        if (connection.hasOwnProperty("currentUsername")) {
+             console.log(`ERROR! User "${inputAccount.username}" tried to connect, but was already logged in.\n`)
+             reject(new Error(`ERROR! You are already logged in!\n`))
+            return;
+        }
+
         fs.readFile(accountPath, { encoding: 'utf8', flag: 'r' }, (err, fileContent) => {
             if (err) {
                 throw err;
@@ -20,8 +27,8 @@ function checkIfAccountExists(inputAccount) {
                 }
             }
 
-            console.log(`WARNING! Wrong username or password for ${JSON.stringify(inputAccount)}.`)
-            reject(new Error("Wrong username or password!"));
+            console.log(`WARNING! Wrong username or password for ${inputAccount.username}.\n`)
+            reject(new Error("ERROR! Wrong username or password!\n"));
             return;
         })
     })
