@@ -52,12 +52,6 @@ function checkIfAccountExists(messageJSON, connection) {
         })
     })
 }
-//             })
-//         })
-//     })
-// }
-
-
 
 function addUserToMailbox(receiver, content, thisConnection) {
     let receiverUser = receiver;
