@@ -1,4 +1,17 @@
-function checkIfAccountExists(connection) {
+function logout(connection) {
+    executeLogout(connection).then((response) => {
+
+        console.log(`Deleting "${connection.currentUsername}" from active users...\n`);
+        delete connection.currentUsername
+
+        connection.write(response)
+
+    }, (rejected) => {
+        connection.write(rejected.message)
+    })
+}
+
+function executeLogout(connection) {
 
     return new Promise((resolve, reject) => {
 
@@ -14,4 +27,4 @@ function checkIfAccountExists(connection) {
     })
 }
 
-exports.check = checkIfAccountExists;
+exports.logout = logout;

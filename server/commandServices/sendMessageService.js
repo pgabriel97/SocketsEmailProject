@@ -2,7 +2,20 @@ const fs = require('fs');
 const accountPath = './database/accounts.json';
 const mailboxPath = './database/mailbox.json';
 
-function checkIfAccountExists(messageJSON, connection) {
+function send(commandArray, connection, connectionArray) {
+    let destinations = commandArray.splice(1, commandArray.length - 2)
+    let messageToSend = commandArray[commandArray.length - 1]
+
+    let sendJSON = { destinations, messageToSend }
+
+    executeSendMessage(sendJSON, connection, connectionArray).then((response) => {
+        connection.write(response)
+    }, (rejected) => {
+        connection.write(rejected.message)
+    });
+}
+
+function executeSendMessage(messageJSON, connection, connectionArray) {
 
     return new Promise((resolve, reject) => {
 
@@ -36,7 +49,7 @@ function checkIfAccountExists(messageJSON, connection) {
                 }
 
                 mailsJSON = JSON.parse(mailboxContent).mails
-                let finalJSON = createNewMailsJSON(mailsJSON, destinationsJSON, messageJSON, connection)
+                let finalJSON = createNewMailsJSON(mailsJSON, destinationsJSON, messageJSON, connection, connectionArray)
 
                 let stringifiedJSON = JSON.stringify(finalJSON);
 
@@ -44,6 +57,8 @@ function checkIfAccountExists(messageJSON, connection) {
                     if (err) {
                         throw err;
                     }
+
+                    // Send notification to connected users
 
                     console.log(`User "${connection.currentUsername}" sent some messages. Mailbox DB updated!\n`)
                     resolve(`OK! Your messages have been successfully sent!\n`);
@@ -53,13 +68,16 @@ function checkIfAccountExists(messageJSON, connection) {
     })
 }
 
-function addUserToMailbox(receiver, content, thisConnection) {
+function addUserToMailbox(receiver, content, thisConnection, connectionArray) {
     let receiverUser = receiver;
     let messageID = `message_${Date.now()}`
     let sender = thisConnection.currentUsername
     let messageContent = content.messageToSend
     let messages = [{ messageID, sender, messageContent }]
     mailsJSON.push({ receiverUser, messages })
+
+    sendMessageToUser(receiver, `NEW_MESSAGE_IN_MAILBOX ${messageID}`, connectionArray)
+
     return mailsJSON
 }
 
@@ -88,11 +106,11 @@ function allDestinationExist(destinations, accounts) {
 }
 
 
-function createNewMailsJSON(mails, destinations, messages, connection) {
+function createNewMailsJSON(mails, destinations, messages, connection, connectionArray) {
 
     if (mails.length == 0) {
         for (let destination of destinations) {
-            mails = addUserToMailbox(destination, messages, connection)
+            mails = addUserToMailbox(destination, messages, connection, connectionArray)
         }
     } else {
 
@@ -109,12 +127,14 @@ function createNewMailsJSON(mails, destinations, messages, connection) {
                     let messageContent = messages.messageToSend
 
                     mail.messages.push({ messageID, sender, messageContent })
+
+                    sendMessageToUser(destination, `NEW_MESSAGE_IN_MAILBOX ${messageID}!`, connectionArray)
                     break;
                 }
 
                 // User has no messages in mailbox --> add the user first, then the message for it
                 if (i == mails.length - 1) {
-                    mails = addUserToMailbox(destination, messages, connection)
+                    mails = addUserToMailbox(destination, messages, connection, connectionArray)
                     break;
                 }
             }
@@ -123,4 +143,13 @@ function createNewMailsJSON(mails, destinations, messages, connection) {
     return { mails };
 }
 
-exports.check = checkIfAccountExists;
+
+function sendMessageToUser(receiver, message, connectionArray) {
+    for (var i = 0; i < connectionArray.length; i++) {
+        if (connectionArray[i].hasOwnProperty("currentUsername") && connectionArray[i].currentUsername == receiver) {
+            connectionArray[i].write(`${message}\n`);
+        }
+    }
+}
+
+exports.send = send;

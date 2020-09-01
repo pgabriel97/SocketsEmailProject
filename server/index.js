@@ -11,6 +11,8 @@ var connectionArray = []
 
 var server = net.createServer(function (connection) {
 
+    connectionArray.push(connection)
+
     console.log(`Client connected: ${connection.remoteAddress}, ${connection.remotePort}\n`)
 
     connection.on('data', function (data) {
@@ -20,83 +22,27 @@ var server = net.createServer(function (connection) {
         console.log(`You received the command: ${commandArray}`)
 
         if (commandArray[0] == "create_account") {
-
-            let inputAccount = {
-                "username": commandArray[1],
-                "password": commandArray[2]
-            }
-
-            registerService.check(inputAccount, connection).then((response) => {
-                connection.write(response)
-            }, (rejected) => {
-                connection.write(rejected.message)
-            })
+            registerService.createAccount(commandArray, connection)
         }
-
 
         if (commandArray[0] == "login") {
-
-            let inputAccount = {
-                "username": commandArray[1],
-                "password": commandArray[2]
-            }
-
-            loginService.check(inputAccount, connection).then((response) => {
-
-                connection.currentUsername = inputAccount.username
-                connectionArray.push(connection)
-                console.log(`User "${inputAccount.username}" logged in. Saved its socket connection".\n`)
-                connection.write(response)
-
-            }, (rejected) => {
-                connection.write(rejected.message)
-            })
+            loginService.login(commandArray, connection, connectionArray)
         }
 
-
         if (commandArray[0] == "logout") {
-
-            logoutService.check(connection).then((response) => {
-
-                console.log(`Deleting "${connection.currentUsername}" from active users...\n`);
-                delete connection.currentUsername
-
-                connection.write(response)
-
-            }, (rejected) => {
-                connection.write(rejected.message)
-            })
+            logoutService.logout(connection)
         }
 
         if (commandArray[0] == "send") {
-
-            let destinations = commandArray.splice(1, commandArray.length - 2)
-            let messageToSend = commandArray[commandArray.length - 1]
-
-            let sendJSON = { destinations, messageToSend }
-
-            sendMessageService.check(sendJSON, connection).then((response) => {
-                connection.write(response)
-            }, (rejected) => {
-                connection.write(rejected.message)
-            });
-
+            sendMessageService.send(commandArray, connection, connectionArray)
         }
 
         if (commandArray[0] == "read_mailbox") {
-            readMailService.check(connection).then((response) => {
-                connection.write(response)
-            }, (rejected) => {
-                connection.write(rejected.message)
-            });
+            readMailService.readMailbox(connection)
         }
 
         if (commandArray[0] == "read_msg") {
-            readMessageService.check(commandArray[1], connection).then((response) => {
-                connection.write(response)
-            }, (rejected) => {
-                connection.write(rejected.message)
-            });
+            readMessageService.readMessage(commandArray, connection)
         }
 
     })

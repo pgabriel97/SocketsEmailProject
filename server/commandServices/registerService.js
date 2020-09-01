@@ -1,7 +1,20 @@
 const fs = require('fs');
 const accountPath = './database/accounts.json';
 
-function checkIfAccountExists(inputAccount, connection) {
+function createAccount(commandArray, connection) {
+    let inputAccount = {
+        "username": commandArray[1],
+        "password": commandArray[2]
+    }
+
+    executeRegister(inputAccount, connection).then((response) => {
+        connection.write(response)
+    }, (rejected) => {
+        connection.write(rejected.message)
+    })
+}
+
+function executeRegister(inputAccount, connection) {
 
     return new Promise((resolve, reject) => {
 
@@ -44,4 +57,4 @@ function checkIfAccountExists(inputAccount, connection) {
     })
 }
 
-exports.check = checkIfAccountExists;
+exports.createAccount = createAccount;

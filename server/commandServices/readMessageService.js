@@ -1,7 +1,15 @@
 const fs = require('fs');
 const accountPath = './database/mailbox.json';
 
-function checkIfAccountExists(wantedMessage, connection) {
+function readMessage(commandArray, connection) {
+    executeReadMessage(commandArray[1], connection).then((response) => {
+        connection.write(response)
+    }, (rejected) => {
+        connection.write(rejected.message)
+    });
+}
+
+function executeReadMessage(wantedMessage, connection) {
 
     return new Promise((resolve, reject) => {
 
@@ -43,4 +51,4 @@ function checkIfAccountExists(wantedMessage, connection) {
     })
 }
 
-exports.check = checkIfAccountExists;
+exports.readMessage = readMessage;
